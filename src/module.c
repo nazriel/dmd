@@ -347,11 +347,11 @@ bool Module::read(Loc loc)
     if (srcfile->read())
     {   
         //try package.d file
-        char filename[240] ;
-        strcpy(filename, srcfile->name->path(srcfile->name->str));
-        strcpy(filename, "package.d");
+        OutBuffer filename;
+        filename.write(new String(srcfile->name->path(srcfile->name->str)));
+        filename.write(new String((char*) "package.d"));
         
-        File *pkgfile = new File(filename);
+        File *pkgfile = new File(filename.extractData());
         if (pkgfile->read())
         {
             goto Lerr;
