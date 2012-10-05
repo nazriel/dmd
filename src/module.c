@@ -249,7 +249,7 @@ Module *Module::load(Loc loc, Identifiers *packages, Identifier *ident)
 {   Module *m;
     char *filename;
 
-    //printf("Module::load(ident = '%s')\n", ident->toChars());
+    printf("Module::load(ident = '%s')\n", ident->toChars());
 
     // Build module filename by turning:
     //  foo.bar.baz
@@ -343,9 +343,25 @@ Module *Module::load(Loc loc, Identifiers *packages, Identifier *ident)
 
 bool Module::read(Loc loc)
 {
-    //printf("Module::read('%s') file '%s'\n", toChars(), srcfile->toChars());
+    printf("Module::read('%s') file '%s'\n", toChars(), srcfile->toChars());
     if (srcfile->read())
-    {   error(loc, "is in file '%s' which cannot be read", srcfile->toChars());
+    {   
+        //try package.d file
+        char filename[240] ;
+        strcpy(filename, srcfile->name->path(srcfile->name->str));
+        strcpy(filename, "package.d");
+        
+        File *pkgfile = new File(filename);
+        if (pkgfile->read())
+        {
+            goto Lerr;
+        }
+        delete srcfile;
+        srcfile = pkgfile;
+        
+        return true;
+    Lerr: 
+        error(loc, "is in file '%s' which cannot be read", srcfile->toChars());
         if (!global.gag)
         {   /* Print path
              */
@@ -402,10 +418,10 @@ inline unsigned readlongBE(unsigned *p)
 
 void Module::parse()
 {
-    //printf("Module::parse()\n");
+    printf("Module::parse()\n");
 
     char *srcname = srcfile->name->toChars();
-    //printf("Module::parse(srcname = '%s')\n", srcname);
+    printf("Module::parse(srcname = '%s')\n", srcname);
 
     unsigned char *buf = srcfile->buffer;
     unsigned buflen = srcfile->len;
@@ -608,12 +624,14 @@ void Module::parse()
         this->safe = md->safe;
         Package *ppack = NULL;
         dst = Package::resolve(md->packages, &this->parent, &ppack);
+        #if 0
         if (ppack && ppack->isModule())
         {
             error(loc, "package name '%s' in file %s conflicts with usage as a module name in file %s",
                 ppack->toChars(), srcname, ppack->isModule()->srcfile->toChars());
             dst = modules;
         }
+        #endif
     }
     else
     {
@@ -650,7 +668,7 @@ void Module::parse()
 
 void Module::importAll(Scope *prevsc)
 {
-    //printf("+Module::importAll(this = %p, '%s'): parent = %p\n", this, toChars(), parent);
+    printf("+Module::importAll(this = %p, '%s'): parent = %p\n", this, toChars(), parent);
 
     if (scope)
         return;                 // already done
@@ -716,7 +734,7 @@ void Module::semantic()
     if (semanticstarted)
         return;
 
-    //printf("+Module::semantic(this = %p, '%s'): parent = %p\n", this, toChars(), parent);
+    printf("+Module::semantic(this = %p, '%s'): parent = %p\n", this, toChars(), parent);
     semanticstarted = 1;
 
     // Note that modules get their own scope, from scratch.
@@ -728,7 +746,7 @@ void Module::semantic()
         Scope::createGlobal(this);      // create root scope
     }
 
-    //printf("Module = %p, linkage = %d\n", sc->scopesym, sc->linkage);
+    printf("Module = %p, linkage = %d\n", sc->scopesym, sc->linkage);
 
 #if 0
     // Add import of "object" if this module isn't "object"
@@ -760,7 +778,7 @@ void Module::semantic()
     for (size_t i = 0; i < members->dim; i++)
     {   Dsymbol *s = (*members)[i];
 
-        //printf("\tModule('%s'): '%s'.semantic0()\n", toChars(), s->toChars());
+        printf("\tModule('%s'): '%s'.semantic0()\n", toChars(), s->toChars());
         s->semantic0(sc);
     }
 
@@ -768,7 +786,7 @@ void Module::semantic()
     for (size_t i = 0; i < members->dim; i++)
     {   Dsymbol *s = (*members)[i];
 
-        //printf("\tModule('%s'): '%s'.semantic()\n", toChars(), s->toChars());
+        printf("\tModule('%s'): '%s'.semantic()\n", toChars(), s->toChars());
         s->semantic(sc);
         runDeferredSemantic();
     }
@@ -778,7 +796,7 @@ void Module::semantic()
         sc->pop();              // 2 pops because Scope::createGlobal() created 2
     }
     semanticRun = semanticstarted;
-    //printf("-Module::semantic(this = %p, '%s'): parent = %p\n", this, toChars(), parent);
+    printf("-Module::semantic(this = %p, '%s'): parent = %p\n", this, toChars(), parent);
 }
 
 void Module::semantic2()
@@ -793,7 +811,7 @@ void Module::semantic2()
         }
         return;
     }
-    //printf("Module::semantic2('%s'): parent = %p\n", toChars(), parent);
+    printf("Module::semantic2('%s'): parent = %p\n", toChars(), parent);
     if (semanticRun == 0)       // semantic() not completed yet - could be recursive call
         return;
     if (semanticstarted >= 2)
@@ -805,7 +823,7 @@ void Module::semantic2()
     // This is so regardless of where in the syntax a module
     // gets imported, it is unaffected by context.
     Scope *sc = Scope::createGlobal(this);      // create root scope
-    //printf("Module = %p\n", sc.scopesym);
+    printf("Module = %p\n", sc->scopesym);
 
     // Pass 2 semantic routines: do initializers and function bodies
     for (size_t i = 0; i < members->dim; i++)
@@ -818,12 +836,12 @@ void Module::semantic2()
     sc = sc->pop();
     sc->pop();
     semanticRun = semanticstarted;
-    //printf("-Module::semantic2('%s'): parent = %p\n", toChars(), parent);
+    printf("-Module::semantic2('%s'): parent = %p\n", toChars(), parent);
 }
 
 void Module::semantic3()
 {
-    //printf("Module::semantic3('%s'): parent = %p\n", toChars(), parent);
+    printf("Module::semantic3('%s'): parent = %p\n", toChars(), parent);
     if (semanticstarted >= 3)
         return;
     assert(semanticstarted == 2);
@@ -833,14 +851,14 @@ void Module::semantic3()
     // This is so regardless of where in the syntax a module
     // gets imported, it is unaffected by context.
     Scope *sc = Scope::createGlobal(this);      // create root scope
-    //printf("Module = %p\n", sc.scopesym);
+    printf("Module = %p\n", sc->scopesym);
 
     // Pass 3 semantic routines: do initializers and function bodies
     for (size_t i = 0; i < members->dim; i++)
     {   Dsymbol *s;
 
         s = (*members)[i];
-        //printf("Module %s: %s.semantic3()\n", toChars(), s->toChars());
+        printf("Module %s: %s.semantic3()\n", toChars(), s->toChars());
         s->semantic3(sc);
     }
 
@@ -859,7 +877,7 @@ void Module::inlineScan()
     // Note that modules get their own scope, from scratch.
     // This is so regardless of where in the syntax a module
     // gets imported, it is unaffected by context.
-    //printf("Module = %p\n", sc.scopesym);
+    //printf("Module = %p\n", sc->scopesym);
 
     for (size_t i = 0; i < members->dim; i++)
     {   Dsymbol *s = (*members)[i];

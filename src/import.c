@@ -93,7 +93,7 @@ void Import::load(Scope *sc)
 
     // See if existing module
     DsymbolTable *dst = Package::resolve(packages, NULL, &pkg);
-#if TARGET_NET  //dot net needs modules and packages with same name
+#if 1 || TARGET_NET  //dot net needs modules and packages with same name
 #else
     if (pkg && pkg->isModule())
     {
