@@ -626,15 +626,17 @@ void Module::parse()
         Dsymbol *prev = dst->lookup(ident);
         assert(prev);
         Module *mprev = prev->isModule();
+
         if (mprev)
         {
-            //FIXME: should report confilct if 2 modules have equal module declaration.
-            //       Now will result in linking errors if 2 modules have same module name.
-            //       Also add check at semantic phase for symbols conflicts ie
+            //FIXME: Add check at semantic phase for symbols conflicts ie
             //       dip16p.foo() and dip16p.x.foo();
-            
-            //error(loc, "from file %s conflicts with another module %s from file %s",
-              //  srcname, mprev->toChars(), mprev->srcfile->toChars());
+
+            if (strcmp(mprev->srcfile->toChars(), srcfile->toChars()))
+            {
+                error(loc, "from file %s conflicts with another module %s from file %s",
+                    srcname, mprev->toChars(), mprev->srcfile->toChars());
+            }
         }
         else
         {
