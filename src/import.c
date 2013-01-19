@@ -93,31 +93,14 @@ void Import::load(Scope *sc)
 
     // See if existing module
     DsymbolTable *dst = Package::resolve(packages, NULL, &pkg);
-    if (pkg && pkg->isModule())
-    {
-        ::error(loc, "can only import from a module, not from a member of module %s. Did you mean `import %s : %s`?",
-             pkg->toChars(), pkg->toPrettyChars(), id->toChars());
-        mod = pkg->isModule(); // Error recovery - treat as import of that module
+
+    if (!dst) 
         return;
-    }
+
     Dsymbol *s = dst->lookup(id);
     if (s)
     {
-        if (s->isModule())
-            mod = (Module *)s;
-        else
-        {
-            if (pkg)
-            {
-                ::error(loc, "can only import from a module, not from package %s.%s",
-                    pkg->toPrettyChars(), id->toChars());
-            }
-            else
-            {
-                ::error(loc, "can only import from a module, not from package %s",
-                    id->toChars());
-            }
-        }
+        mod = (Module *)s;
     }
 
     if (!mod)

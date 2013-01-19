@@ -608,14 +608,7 @@ void Module::parse()
     if (md)
     {   this->ident = md->id;
         this->safe = md->safe;
-        Package *ppack = NULL;
-        dst = Package::resolve(md->packages, &this->parent, &ppack);
-        if (ppack && ppack->isModule())
-        {
-            error(loc, "package name '%s' in file %s conflicts with usage as a module name in file %s",
-                ppack->toChars(), srcname, ppack->isModule()->srcfile->toChars());
-            dst = modules;
-        }
+        dst=modules;
     }
     else
     {
@@ -634,14 +627,18 @@ void Module::parse()
         assert(prev);
         Module *mprev = prev->isModule();
         if (mprev)
-            error(loc, "from file %s conflicts with another module %s from file %s",
-                srcname, mprev->toChars(), mprev->srcfile->toChars());
+        {
+            //FIXME: should report confilct if 2 modules have equal module declaration.
+            //       Now will result in linking errors if 2 modules have same module name.
+            //       Also add check at semantic phase for symbols conflicts ie
+            //       dip16p.foo() and dip16p.x.foo();
+            
+            //error(loc, "from file %s conflicts with another module %s from file %s",
+              //  srcname, mprev->toChars(), mprev->srcfile->toChars());
+        }
         else
         {
-            Package *pkg = prev->isPackage();
-            assert(pkg);
-            error(pkg->loc, "from file %s conflicts with package name %s",
-                srcname, pkg->toChars());
+            amodules.push(this);
         }
     }
     else
