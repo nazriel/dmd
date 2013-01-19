@@ -4,4 +4,5 @@ void main() {
 	foo();
 	xoo();
 	yoo();
+	zoo();
 }
